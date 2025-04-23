@@ -167,7 +167,12 @@ def display_history_list(history_df):
             cols[0].metric("BLEU", f"{row['bleu_score']:.4f}" if pd.notna(row['bleu_score']) else "-")
             cols[1].metric("類似度", f"{row['similarity_score']:.4f}" if pd.notna(row['similarity_score']) else "-")
             cols[2].metric("関連性", f"{row['relevance_score']:.4f}" if pd.notna(row['relevance_score']) else "-")
-
+            
+            cols = st.columns(3)
+            cols[0].metric("ROUGE-1", f"{row['rouge1']:.4f}" if pd.notna(row['rouge1']) else "-")
+            cols[1].metric("ROUGE-2", f"{row['rouge2']:.4f}" if pd.notna(row['rouge2']) else "-")
+            cols[2].metric("ROUGE-L", f"{row['rougeL']:.4f}" if pd.notna(row['rougeL']) else "-")
+            
     st.caption(f"{total_items} 件中 {start_idx+1} - {min(end_idx, total_items)} 件を表示")
 
 
@@ -194,7 +199,7 @@ def display_metrics_analysis(history_df):
 
     # 応答時間と他の指標の関係
     st.write("##### 応答時間とその他の指標の関係")
-    metric_options = ["bleu_score", "similarity_score", "relevance_score", "word_count"]
+    metric_options = ["bleu_score", "similarity_score", "relevance_score", "word_count", "rouge1", "rouge2", "rougeL"]
     # 利用可能な指標のみ選択肢に含める
     valid_metric_options = [m for m in metric_options if m in analysis_df.columns and analysis_df[m].notna().any()]
 
@@ -222,13 +227,23 @@ def display_metrics_analysis(history_df):
 
     # 全体の評価指標の統計
     st.write("##### 評価指標の統計")
-    stats_cols = ['response_time', 'bleu_score', 'similarity_score', 'word_count', 'relevance_score']
+    stats_cols = ['response_time', 'bleu_score', 'similarity_score', 'word_count', 'relevance_score', 'rouge1', 'rouge2', 'rougeL']
     valid_stats_cols = [c for c in stats_cols if c in analysis_df.columns and analysis_df[c].notna().any()]
     if valid_stats_cols:
         metrics_stats = analysis_df[valid_stats_cols].describe()
         st.dataframe(metrics_stats)
     else:
         st.info("統計情報を計算できる評価指標データがありません。")
+
+    st.write("##### ROUGEスコアの統計")
+    if 'rouge1' in analysis_df.columns and 'rouge2' in analysis_df.columns and 'rougeL' in analysis_df.columns:
+        try:
+            rouge_stats = analysis_df[['rouge1', 'rouge2', 'rougeL']].describe()
+            st.dataframe(rouge_stats)
+        except Exception as e:
+            st.warning(f"ROUGEスコアの統計情報表示中にエラーが発生しました: {e}")
+    else:
+        st.info("ROUGEスコアを計算するためのデータが不足しています。")
 
     # 正確性レベル別の平均スコア
     st.write("##### 正確性レベル別の平均スコア")

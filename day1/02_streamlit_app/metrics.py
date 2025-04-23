@@ -5,6 +5,7 @@ from janome.tokenizer import Tokenizer
 import re
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.feature_extraction.text import TfidfVectorizer
+from rouge_score import rouge_scorer
 
 # NLTKのヘルパー関数（エラー時フォールバック付き）
 try:
@@ -67,6 +68,17 @@ def calculate_metrics(answer, correct_answer):
             # st.warning(f"BLEUスコア計算エラー: {e}")
             bleu_score = 0.0 # エラー時は0
 
+        # ROUGEスコアの計算
+        try:
+            scorer = rouge_scorer.RougeScorer(['rouge1', 'rouge2', 'rougeL'], use_stemmer=True)
+            rouge_scores = scorer.score(correct_answer_lower, answer_lower)
+            rouge1 = rouge_scores['rouge1'].fmeasure
+            rouge2 = rouge_scores['rouge2'].fmeasure
+            rougeL = rouge_scores['rougeL'].fmeasure
+        except Exception as e:
+            # st.warning(f"ROUGEスコア計算エラー: {e}")
+            rouge1, rouge2, rougeL = 0.0, 0.0, 0.0
+
         # コサイン類似度の計算
         try:
             vectorizer = TfidfVectorizer()
@@ -93,7 +105,7 @@ def calculate_metrics(answer, correct_answer):
             # st.warning(f"関連性スコア計算エラー: {e}")
             relevance_score = 0.0 # エラー時は0
 
-    return bleu_score, similarity_score, word_count, relevance_score
+    return bleu_score, similarity_score, word_count, relevance_score, rouge1, rouge2, rougeL
 
 def get_metrics_descriptions():
     """評価指標の説明を返す"""
@@ -104,5 +116,8 @@ def get_metrics_descriptions():
         "類似度スコア (similarity_score)": "TF-IDFベクトルのコサイン類似度による、正解と回答の意味的な類似性 (0〜1の値)",
         "単語数 (word_count)": "回答に含まれる単語の数。情報量や詳細さの指標",
         "関連性スコア (relevance_score)": "正解と回答の共通単語の割合。トピックの関連性を表す (0〜1の値)",
-        "効率性スコア (efficiency_score)": "正確性を応答時間で割った値。高速で正確な回答ほど高スコア"
+        "効率性スコア (efficiency_score)": "正確性を応答時間で割った値。高速で正確な回答ほど高スコア",
+        "ROUGE-1 (rouge1)": "生成された回答と正解の間の1-gramの一致度 (0〜1の値)",
+        "ROUGE-2 (rouge2)": "生成された回答と正解の間の2-gramの一致度 (0〜1の値)",
+        "ROUGE-L (rougeL)": "生成された回答と正解の間の長い共通部分列 (LCS) の一致度 (0〜1の値)"
     }

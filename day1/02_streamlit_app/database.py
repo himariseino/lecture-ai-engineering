@@ -21,7 +21,10 @@ CREATE TABLE IF NOT EXISTS {TABLE_NAME}
  bleu_score REAL,
  similarity_score REAL,
  word_count INTEGER,
- relevance_score REAL)
+ relevance_score REAL,
+ rouge1 REAL,
+ rouge2 REAL,
+ rougeL REAL)
 '''
 
 # --- データベース初期化 ---
@@ -48,16 +51,18 @@ def save_to_db(question, answer, feedback, correct_answer, is_correct, response_
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         # 追加の評価指標を計算
-        bleu_score, similarity_score, word_count, relevance_score = calculate_metrics(
+        bleu_score, similarity_score, word_count, relevance_score, rouge1, rouge2, rougeL = calculate_metrics(
             answer, correct_answer
         )
 
         c.execute(f'''
         INSERT INTO {TABLE_NAME} (timestamp, question, answer, feedback, correct_answer, is_correct,
-                                 response_time, bleu_score, similarity_score, word_count, relevance_score)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                 response_time, bleu_score, similarity_score, word_count, relevance_score,
+                                 rouge1, rouge2, rougeL)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (timestamp, question, answer, feedback, correct_answer, is_correct,
-             response_time, bleu_score, similarity_score, word_count, relevance_score))
+             response_time, bleu_score, similarity_score, word_count, relevance_score,
+             rouge1, rouge2, rougeL))
         conn.commit()
         print("Data saved to DB successfully.") # デバッグ用
     except sqlite3.Error as e:
